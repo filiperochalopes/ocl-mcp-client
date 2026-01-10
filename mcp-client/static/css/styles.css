@@ -15,7 +15,8 @@
   --radius-lg: 24px;
   --radius-md: 16px;
   --radius-sm: 10px;
-  --font: "Sora", "Space Grotesk", "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font: "Funnel Sans", sans-serif;
+  --font-title: "Montserrat", sans-serif;
   --mono: "JetBrains Mono", "SFMono-Regular", "Menlo", monospace;
 }
 
@@ -26,6 +27,7 @@
 body {
   margin: 0;
   font-family: var(--font);
+  font-weight: 300;
   background: radial-gradient(1200px 600px at 20% -10%, rgba(51, 214, 166, 0.18), transparent 60%),
     radial-gradient(900px 500px at 80% 0%, rgba(245, 165, 36, 0.15), transparent 60%),
     var(--bg);
@@ -74,6 +76,16 @@ header {
 .brand img {
   width: 44px;
   height: 44px;
+}
+
+h1 {
+  font-family: var(--font-title);
+  font-weight: 600;
+  margin: 0;
+}
+
+h2, h3, h4, strong, b, button {
+  font-weight: 400;
 }
 
 .brand h1 {
@@ -263,10 +275,15 @@ header {
   font-size: 0.95rem;
   line-height: 1.6;
   overflow-x: auto;
+  margin-top: 8px;
 }
 
 .markdown-body p {
   margin: 0 0 0.5rem 0;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
 }
 
 .markdown-body h1,
@@ -350,7 +367,6 @@ header {
 }
 
 .tool-call-name {
-  font-weight: 600;
   font-size: 0.9rem;
 }
 
@@ -436,7 +452,6 @@ header {
 }
 
 .tool-event-name {
-  font-weight: 600;
   font-size: 0.95rem;
 }
 
@@ -552,7 +567,6 @@ button {
   border-radius: 999px;
   padding: 10px 18px;
   font-family: var(--font);
-  font-weight: 600;
   font-size: 0.95rem;
 }
 
@@ -796,7 +810,6 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
   font-size: 1rem;
   text-transform: uppercase;
   margin-right: 4px;

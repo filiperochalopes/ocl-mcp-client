@@ -102,7 +102,7 @@
   }
 
   const getChatHistory = () => {
-    const raw = sessionStorage.getItem(CHAT_HISTORY_KEY)
+    const raw = localStorage.getItem(CHAT_HISTORY_KEY)
     if (!raw) return []
     try {
       const parsed = JSON.parse(raw)
@@ -114,7 +114,7 @@
   }
 
   const setChatHistory = (entries) => {
-    sessionStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(entries))
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(entries))
   }
 
   const readSessionDefaults = () => {
@@ -208,15 +208,6 @@
       }
     }
 
-    const maybeResetHistoryOnReload = () => {
-      const entries = performance.getEntriesByType?.('navigation') || []
-      const navType = entries[0]?.type || (performance.navigation?.type === 1 ? 'reload' : 'navigate')
-      if (navType === 'reload') {
-        setChatHistory([])
-        if (log) log.innerHTML = ''
-      }
-    }
-
     const updateUIForSession = (config) => {
       const ready = isConfigComplete(config)
       setStatus(ready)
@@ -265,17 +256,17 @@
     const currentConfig = getSessionConfig()
     setStatus(isConfigComplete(currentConfig))
     updateUIForSession(currentConfig)
-    maybeResetHistoryOnReload()
 
     if (form) {
       form.provider.value = currentConfig.provider || defaults.provider || 'anthropic'
-      form.model.value = currentConfig.model || defaults.model || ''
+      form.model.value = currentConfig.model || defaults.model || 'claude-haiku-4-5'
       form.api_key.value = currentConfig.api_key || defaults.api_key || ''
       form.ocl_token.value = currentConfig.ocl_token || defaults.ocl_token || ''
 
-      const oclValue = currentConfig.ocl_url || defaults.ocl_url || 'http://api.openconceptlab.org/'
+      const oclValue = currentConfig.ocl_url || defaults.ocl_url || 'https://api.openconceptlab.org/'
       if (oclSelect) {
         const knownUrls = [
+          'https://api.openconceptlab.org/',
           'http://api.openconceptlab.org/',
           'https://api.staging.openconceptlab.org/',
           'http://api.ocl.localhost'
@@ -325,7 +316,7 @@
           const action = event.currentTarget.getAttribute('data-session-menu-action')
           if (action === 'logout') {
             sessionStorage.removeItem(SESSION_CONFIG_KEY)
-            sessionStorage.removeItem(CHAT_HISTORY_KEY)
+            localStorage.removeItem(CHAT_HISTORY_KEY)
             updateUIForSession({})
             closeMenu()
             openModal()
@@ -354,7 +345,7 @@
     if (form) {
       form.addEventListener('submit', (event) => {
         event.preventDefault()
-        let oclUrlValue = 'http://api.openconceptlab.org/'
+        let oclUrlValue = 'https://api.openconceptlab.org/'
         if (oclSelect) {
           oclUrlValue = oclSelect.value
           if (oclUrlValue === 'other') {
@@ -431,13 +422,11 @@
       const meta = document.createElement('div')
       meta.className = 'meta'
       meta.textContent = role === 'user' ? 'You' : 'Assistant'
-      const body = document.createElement(role === 'assistant' ? 'div' : 'p')
-      if (role === 'assistant') {
-        body.className = 'markdown-body'
-        body.innerHTML = renderMarkdown(coerceString(text))
-      } else {
-        body.textContent = coerceString(text)
-      }
+      
+      const body = document.createElement('div')
+      body.className = 'markdown-body'
+      body.innerHTML = renderMarkdown(coerceString(text))
+
       entry.appendChild(meta)
       entry.appendChild(body)
 
@@ -662,9 +651,17 @@
 
   const page = document.body?.dataset?.page
   if (page === 'chat') {
-    initChatPage()
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initChatPage)
+    } else {
+      initChatPage()
+    }
   }
   if (page === 'config') {
-    initConfigPage()
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initConfigPage)
+    } else {
+      initConfigPage()
+    }
   }
 })()
