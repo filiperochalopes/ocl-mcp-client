@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c1116" />
+  <title>OCL MCP Client · Chat</title>
+  <link rel="icon" type="image/svg+xml" href="/static/img/ocl-mcp-logo.svg" />
+  <link rel="alternate icon" type="image/x-icon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <script id="session-defaults" type="application/json">{{ session_defaults | tojson | safe }}</script>
+</head>
+
+<body data-page="chat">
+  <main class="main">
+    <header>
+      <div class="brand">
+        <img src="/static/img/ocl-mcp-logo.svg" alt="OCL MCP" />
+        <div>
+          <h1>OCL MCP Client</h1>
+          <p>Private session chat for OCL terminology workflows.</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="active" href="/chat">Chat</a>
+        <a href="/config">Config</a>
+        <a href="/help">Help</a>
+      </nav>
+    </header>
+
+    <section class="shell" style="margin-top: 28px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div>
+          <h2 class="section-title">Chat workspace</h2>
+          <p class="section-subtitle">Your session config lives only in sessionStorage.</p>
+        </div>
+        <div class="status">
+          <span class="status-dot" data-status-dot></span>
+          <span data-status-text>Missing session configuration.</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="chat-panel">
+          <div class="chat-log" data-chat-log>
+            <div class="message">
+              <div class="meta">System</div>
+              <p>Set your provider details to start a secure session.</p>
+            </div>
+          </div>
+
+          <div class="compose">
+            <textarea placeholder="Ask about OCL concepts, mappings, or repositories." data-chat-input></textarea>
+            <div class="btn-row">
+              <button class="btn-secondary" type="button" data-chat-reset>Clear</button>
+              <button class="btn-primary" type="button" data-chat-send>Send</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="aside-card">
+          <div>
+            <h3>Session controls</h3>
+            <p>Manage provider credentials and your OCL user token. Nothing is stored on our servers.</p>
+          </div>
+          <button class="btn-secondary" type="button" data-open-config>Update session config</button>
+          <div>
+            <h3>Tools</h3>
+            <p data-tool-summary>Loading tool settings...</p>
+            <div class="tag-list">
+              <span class="tag">OCL API</span>
+              <span class="tag">Mappings</span>
+              <span class="tag">Repositories</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" data-modal="config">
+    <div class="modal-card">
+      <h2>Session configuration</h2>
+      <p>Provide your LLM and OCL credentials for this session only.</p>
+
+      <div class="warning-box">
+        We never store provider keys on our servers. Keys are stored only in your browser sessionStorage and cleared
+        when you close the tab or browser. We are not responsible for leaks or misuse from third-party attacks. Disable
+        the key when you finish your work. This MVP uses a weak security approach.
+      </div>
+
+      <form class="form-grid" data-form="config">
+        <div class="form-field">
+          <label for="provider">Provider</label>
+          <select id="provider" name="provider" required>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="mistral">Mistral</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="ollama">Ollama</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="model">Model</label>
+          <input id="model" name="model" type="text" placeholder="gpt-4.1-mini" required />
+        </div>
+        <div class="form-field">
+          <label for="api_key">Provider API key</label>
+          <input id="api_key" name="api_key" type="password" placeholder="sk-..." required />
+        </div>
+        <div style="grid-column: 1 / -1; border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 12px;">
+          <strong>OCL settings</strong>
+        </div>
+        <div class="form-field">
+          <label for="ocl_url_select">OCL URL</label>
+          <select id="ocl_url_select" name="ocl_url_select" required>
+            <option value="http://api.openconceptlab.org/">Production (http://api.openconceptlab.org/)</option>
+            <option value="https://api.staging.openconceptlab.org/">Staging (https://api.staging.openconceptlab.org/)</option>
+            <option value="http://api.ocl.localhost">Local (http://api.ocl.localhost)</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-field" data-ocl-custom-field style="display: none;">
+          <label for="ocl_url_custom">Custom OCL URL</label>
+          <input id="ocl_url_custom" name="ocl_url_custom" type="text" placeholder="https://your-ocl-host" />
+        </div>
+        <div class="form-field">
+          <label for="ocl_token">OCL user token</label>
+          <input id="ocl_token" name="ocl_token" type="password" placeholder="Your OCL token" required />
+        </div>
+        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+          <button class="btn-secondary" type="button" data-close-config>Cancel</button>
+          <button class="btn-primary" type="submit">Save session</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+
+</html>

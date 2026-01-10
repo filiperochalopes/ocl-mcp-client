@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c1116" />
+  <title>OCL MCP Client · Config</title>
+  <link rel="icon" type="image/svg+xml" href="/static/img/ocl-mcp-logo.svg" />
+  <link rel="alternate icon" type="image/x-icon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+
+<body data-page="config">
+  <main class="main">
+    <header>
+      <div class="brand">
+        <img src="/static/img/ocl-mcp-logo.svg" alt="OCL MCP" />
+        <div>
+          <h1>Tool configuration</h1>
+          <p>Select which MCP tools are enabled for this browser.</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="/chat">Chat</a>
+        <a class="active" href="/config">Config</a>
+        <a href="/help">Help</a>
+      </nav>
+    </header>
+
+    <section class="shell" style="margin-top: 28px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div>
+          <h2 class="section-title">Available tools</h2>
+          <p class="section-subtitle" data-tool-count>Loading tool settings...</p>
+        </div>
+        <button class="btn-secondary" type="button" data-reset-tools>Reset to defaults</button>
+      </div>
+
+      <div class="list" data-tool-list></div>
+
+      <p class="footer-note">
+        Tool preferences are stored in localStorage and stay available until you clear browser data.
+      </p>
+    </section>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+
+</html>

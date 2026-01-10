@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c1116" />
+  <title>OCL MCP Client · Help</title>
+  <link rel="icon" type="image/svg+xml" href="/static/img/ocl-mcp-logo.svg" />
+  <link rel="alternate icon" type="image/x-icon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+
+<body>
+  <main class="main">
+    <header>
+      <div class="brand">
+        <img src="/static/img/ocl-mcp-logo.svg" alt="OCL MCP" />
+        <div>
+          <h1>Help</h1>
+          <p>How to use the OCL MCP client safely.</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="/chat">Chat</a>
+        <a href="/config">Config</a>
+        <a class="active" href="/help">Help</a>
+      </nav>
+    </header>
+
+    <section class="shell" style="margin-top: 28px;">
+      <h2 class="section-title">Quick start</h2>
+      <p class="section-subtitle">
+        1. Open Chat and enter your provider credentials and OCL token.<br />
+        2. Adjust the tool list on the Config page if you need to limit access.<br />
+        3. Ask about repositories, concepts, mappings, or expansions.
+      </p>
+
+      <div style="margin-top: 24px;" class="aside-card">
+        <h3>Security guidance</h3>
+        <p>
+          Provider keys and OCL tokens are stored only in sessionStorage and are cleared when the tab or browser closes.
+          We do not store any keys on our servers. You remain responsible for your credentials. Disable or rotate keys
+          after you finish to reduce risk. This MVP uses a weak security approach.
+        </p>
+      </div>
+
+      <div style="margin-top: 24px;" class="aside-card">
+        <h3>Need a clean reset?</h3>
+        <p>
+          Clear localStorage to reset tool preferences. Clear sessionStorage or close the browser to remove credentials.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+
+</html>
