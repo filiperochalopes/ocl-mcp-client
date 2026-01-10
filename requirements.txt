@@ -2,3 +2,7 @@
 fastapi
 jinja2
 uvicorn[standard]
+anyio>=4.0.0
+langchain
+langchain-anthropic
+langchain-openai

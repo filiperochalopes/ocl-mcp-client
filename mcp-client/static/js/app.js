@@ -1,6 +1,7 @@
 (() => {
   const SESSION_CONFIG_KEY = 'ocl_mcp_config'
   const LOCAL_TOOLS_KEY = 'ocl_mcp_tools'
+  const CHAT_HISTORY_KEY = 'ocl_mcp_chat_history'
 
   const TOOL_DEFINITIONS = [
     {
@@ -100,6 +101,22 @@
     sessionStorage.setItem(SESSION_CONFIG_KEY, JSON.stringify(value))
   }
 
+  const getChatHistory = () => {
+    const raw = sessionStorage.getItem(CHAT_HISTORY_KEY)
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : []
+    } catch (err) {
+      console.warn('Failed to parse chat history', err)
+      return []
+    }
+  }
+
+  const setChatHistory = (entries) => {
+    sessionStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(entries))
+  }
+
   const readSessionDefaults = () => {
     const el = document.getElementById('session-defaults')
     if (!el) return {}
@@ -161,6 +178,72 @@
     const oclSelect = document.getElementById('ocl_url_select')
     const oclCustomField = document.querySelector('[data-ocl-custom-field]')
     const oclCustomInput = document.getElementById('ocl_url_custom')
+    const navMenu = document.getElementById('nav-menu')
+    const systemMsg = document.getElementById('system-setup-msg')
+    const sessionAside = document.getElementById('session-controls-aside')
+    const gridLayout = document.querySelector('.grid')
+    const avatar = document.querySelector('[data-session-avatar]')
+    const avatarInitial = document.querySelector('[data-avatar-initial]')
+    const avatarMenu = document.querySelector('[data-session-menu]')
+
+    let isLoading = false
+
+    const setLoading = (loading) => {
+      isLoading = loading
+      if (sendBtn) {
+        if (!sendBtn.dataset.defaultLabel) {
+          sendBtn.dataset.defaultLabel = sendBtn.textContent || 'Send'
+        }
+        sendBtn.disabled = loading
+        sendBtn.classList.toggle('is-loading', loading)
+        sendBtn.setAttribute('aria-busy', loading ? 'true' : 'false')
+        if (loading) {
+          sendBtn.innerHTML = '<span class="linear-wipe">Analyzing...</span>'
+        } else {
+          sendBtn.textContent = sendBtn.dataset.defaultLabel || 'Send'
+        }
+      }
+      if (input) {
+        input.disabled = loading
+      }
+    }
+
+    const maybeResetHistoryOnReload = () => {
+      const entries = performance.getEntriesByType?.('navigation') || []
+      const navType = entries[0]?.type || (performance.navigation?.type === 1 ? 'reload' : 'navigate')
+      if (navType === 'reload') {
+        setChatHistory([])
+        if (log) log.innerHTML = ''
+      }
+    }
+
+    const updateUIForSession = (config) => {
+      const ready = isConfigComplete(config)
+      setStatus(ready)
+
+      if (systemMsg) {
+        systemMsg.style.display = ready ? 'none' : 'block'
+      }
+
+      if (sessionAside) {
+        sessionAside.style.display = ready ? 'none' : 'grid'
+      }
+      
+      if (gridLayout) {
+        gridLayout.style.gridTemplateColumns = ready ? '1fr' : '2fr 1fr'
+      }
+
+      if (avatar) {
+        if (ready && config.model) {
+          avatarInitial.textContent = (config.model.trim().charAt(0) || '?').toUpperCase()
+          avatar.title = config.model
+          avatar.style.display = 'inline-flex'
+        } else {
+          avatar.style.display = 'none'
+          if (avatarMenu) avatarMenu.classList.remove('open')
+        }
+      }
+    }
 
     const setStatus = (ready) => {
       if (!statusDot || !statusText) return
@@ -181,6 +264,8 @@
     const defaults = readSessionDefaults()
     const currentConfig = getSessionConfig()
     setStatus(isConfigComplete(currentConfig))
+    updateUIForSession(currentConfig)
+    maybeResetHistoryOnReload()
 
     if (form) {
       form.provider.value = currentConfig.provider || defaults.provider || 'anthropic'
@@ -216,6 +301,43 @@
       closeBtn.addEventListener('click', () => closeModal())
     }
 
+    const toggleMenu = () => {
+      if (!avatarMenu) return
+      avatarMenu.classList.toggle('open')
+    }
+
+    const closeMenu = () => {
+      if (avatarMenu) avatarMenu.classList.remove('open')
+    }
+
+    if (avatar) {
+      avatar.addEventListener('click', (event) => {
+        event.stopPropagation()
+        toggleMenu()
+      })
+    }
+
+    if (avatarMenu) {
+      avatarMenu.addEventListener('click', (event) => event.stopPropagation())
+      document.addEventListener('click', closeMenu)
+      avatarMenu.querySelectorAll('[data-session-menu-action]').forEach((btn) => {
+        btn.addEventListener('click', (event) => {
+          const action = event.currentTarget.getAttribute('data-session-menu-action')
+          if (action === 'logout') {
+            sessionStorage.removeItem(SESSION_CONFIG_KEY)
+            sessionStorage.removeItem(CHAT_HISTORY_KEY)
+            updateUIForSession({})
+            closeMenu()
+            openModal()
+          }
+          if (action === 'config') {
+            closeMenu()
+            openModal()
+          }
+        })
+      })
+    }
+
     const toggleOclCustom = () => {
       if (!oclSelect || !oclCustomField) return
       const isOther = oclSelect.value === 'other'
@@ -248,6 +370,7 @@
         }
         setSessionConfig(payload)
         setStatus(isConfigComplete(payload))
+        updateUIForSession(payload)
         closeModal()
       })
     }
@@ -258,39 +381,218 @@
       toolSummary.textContent = `${enabled.length} of ${TOOL_DEFINITIONS.length} tools enabled in local settings.`
     }
 
-    const addMessage = (role, text) => {
+    const coerceString = (value) => {
+      if (typeof value === 'string') return value
+      try {
+        return JSON.stringify(value, null, 2)
+      } catch (err) {
+        return String(value)
+      }
+    }
+
+    const formatMaybeJson = (value) => {
+      const text = coerceString(value)
+      try {
+        const parsed = JSON.parse(text)
+        return JSON.stringify(parsed, null, 2)
+      } catch (err) {
+        return text
+      }
+    }
+
+    const renderMarkdown = (text) => {
+      if (!text) return ''
+      const raw = String(text)
+
+      const escapeHtml = (value) =>
+        value
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+
+      if (window.marked && window.DOMPurify) {
+        if (!window.__markedConfigured) {
+          window.marked.setOptions({ gfm: true, breaks: true, headerIds: false, mangle: false })
+          window.__markedConfigured = true
+        }
+        const html = window.marked.parse(raw)
+        return window.DOMPurify.sanitize(html)
+      }
+
+      return escapeHtml(raw).replace(/\n/g, '<br />')
+    }
+
+    const addMessage = (role, text, persist = true) => {
       if (!log) return
       const entry = document.createElement('div')
       entry.className = `message ${role}`
       const meta = document.createElement('div')
       meta.className = 'meta'
       meta.textContent = role === 'user' ? 'You' : 'Assistant'
-      const body = document.createElement('p')
-      body.textContent = text
+      const body = document.createElement(role === 'assistant' ? 'div' : 'p')
+      if (role === 'assistant') {
+        body.className = 'markdown-body'
+        body.innerHTML = renderMarkdown(coerceString(text))
+      } else {
+        body.textContent = coerceString(text)
+      }
       entry.appendChild(meta)
       entry.appendChild(body)
+
       log.appendChild(entry)
       log.scrollTop = log.scrollHeight
+
+      if (persist) {
+        const history = getChatHistory()
+        history.push({ role, content: coerceString(text) })
+        setChatHistory(history)
+      }
     }
 
-    if (sendBtn && input) {
-      sendBtn.addEventListener('click', () => {
-        const value = input.value.trim()
-        if (!value) return
-        addMessage('user', value)
-        addMessage(
-          'assistant',
-          'This UI build stores messages locally. Connect it to the backend when ready to run live MCP calls.'
-        )
-        input.value = ''
+    const addToolEvent = (kind, toolName, payload, persist = true) => {
+      if (!log) return
+      const entry = document.createElement('div')
+      entry.className = `message tool-${kind}`
+
+      const meta = document.createElement('div')
+      meta.className = 'meta'
+      meta.textContent = kind === 'call' ? 'Tool Call' : 'Tool Result'
+      entry.appendChild(meta)
+
+      const header = document.createElement('div')
+      header.className = 'tool-event-header'
+      const title = document.createElement('span')
+      title.className = 'tool-event-name'
+      title.textContent = toolName || 'Tool'
+      const badge = document.createElement('span')
+      badge.className = `tool-event-badge ${kind}`
+      badge.textContent = kind === 'call' ? 'CALL' : 'RESULT'
+      header.appendChild(title)
+      header.appendChild(badge)
+      entry.appendChild(header)
+
+      const details = document.createElement('details')
+      details.className = `tool-event-details ${kind}`
+      const summary = document.createElement('summary')
+      summary.className = 'tool-event-summary'
+      summary.textContent = kind === 'call' ? 'View tool call' : 'View tool result'
+      const pre = document.createElement('pre')
+      pre.className = 'tool-event-pre'
+      pre.textContent = formatMaybeJson(payload ?? {})
+      details.appendChild(summary)
+      details.appendChild(pre)
+      entry.appendChild(details)
+
+      log.appendChild(entry)
+      log.scrollTop = log.scrollHeight
+
+      if (persist) {
+        const history = getChatHistory()
+        history.push({ role: kind === 'call' ? 'tool_call' : 'tool_result', name: toolName, payload })
+        setChatHistory(history)
+      }
+    }
+
+    const addToolCalls = (toolCalls, persist = true) => {
+      if (!Array.isArray(toolCalls) || toolCalls.length === 0) return
+      toolCalls.forEach((toolCall) => {
+        addToolEvent('call', toolCall?.name, toolCall?.args ?? {}, persist)
+        addToolEvent('result', toolCall?.name, toolCall?.result ?? '', persist)
+      })
+    }
+
+    const buildHistoryPayload = () => {
+      const history = getChatHistory()
+      return history
+        .filter((entry) => entry && (entry.role === 'user' || entry.role === 'assistant'))
+        .map((entry) => ({ role: entry.role, content: String(entry.content || '') }))
+    }
+
+    const sendMessage = async () => {
+      if (!input) return
+      if (isLoading) return
+      const value = input.value.trim()
+      if (!value) return
+      
+      input.value = ''
+      const historyPayload = buildHistoryPayload()
+      addMessage('user', value)
+      setLoading(true)
+
+      try {
+        const response = await fetch('/chat/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: value, history: historyPayload })
+        })
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`)
+        }
+
+        const data = await response.json()
+        if (Array.isArray(data.events) && data.events.length) {
+          data.events.forEach((event) => {
+            if (event?.type === 'assistant') {
+              addMessage('assistant', event.content || '')
+            } else if (event?.type === 'tool_call') {
+              addToolEvent('call', event.name, event.args ?? {})
+            } else if (event?.type === 'tool_result') {
+              addToolEvent('result', event.name, event.result ?? '')
+            }
+          })
+        } else {
+          if (data.content) addMessage('assistant', data.content)
+          addToolCalls(data.tool_calls)
+        }
+      } catch (err) {
+        console.error(err)
+        addMessage('assistant', 'Error sending message. Please check the console.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (sendBtn) {
+      sendBtn.addEventListener('click', sendMessage)
+    }
+
+    if (input) {
+      input.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+          event.preventDefault()
+          sendMessage()
+        }
       })
     }
 
     if (resetBtn && log) {
       resetBtn.addEventListener('click', () => {
         log.innerHTML = ''
+        setChatHistory([])
       })
     }
+
+    const history = getChatHistory()
+    if (history.length) {
+      history.forEach((entry) => {
+        if (entry?.role === 'tool_call') {
+          addToolEvent('call', entry.name, entry.payload ?? {}, false)
+          return
+        }
+        if (entry?.role === 'tool_result') {
+          addToolEvent('result', entry.name, entry.payload ?? '', false)
+          return
+        }
+        if (entry?.role) {
+          addMessage(entry.role, entry.content || '', false)
+        }
+      })
+    }
+
+    setLoading(false)
   }
 
   const initConfigPage = () => {

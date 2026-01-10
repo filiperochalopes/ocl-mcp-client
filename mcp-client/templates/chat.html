@@ -8,6 +8,8 @@
   <title>OCL MCP Client · Chat</title>
   <link rel="icon" type="image/svg+xml" href="/static/img/ocl-mcp-logo.svg" />
   <link rel="alternate icon" type="image/x-icon" href="/static/img/favicon.ico" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" defer></script>
   <link rel="stylesheet" href="/static/css/styles.css" />
   <script id="session-defaults" type="application/json">{{ session_defaults | tojson | safe }}</script>
 </head>
@@ -22,10 +24,17 @@
           <p>Private session chat for OCL terminology workflows.</p>
         </div>
       </div>
-      <nav class="nav">
+      <nav class="nav" id="nav-menu">
+        <button type="button" class="avatar" data-session-avatar style="display: none;" aria-label="Session menu">
+          <span data-avatar-initial>?</span>
+        </button>
         <a class="active" href="/chat">Chat</a>
         <a href="/config">Config</a>
         <a href="/help">Help</a>
+        <div class="avatar-menu" data-session-menu>
+          <button type="button" data-session-menu-action="config">Configure session</button>
+          <button type="button" data-session-menu-action="logout">Sign out</button>
+        </div>
       </nav>
     </header>
 
@@ -44,7 +53,7 @@
       <div class="grid">
         <div class="chat-panel">
           <div class="chat-log" data-chat-log>
-            <div class="message">
+            <div class="message" id="system-setup-msg" data-init-message>
               <div class="meta">System</div>
               <p>Set your provider details to start a secure session.</p>
             </div>
@@ -59,7 +68,7 @@
           </div>
         </div>
 
-        <aside class="aside-card">
+        <aside class="aside-card" id="session-controls-aside" data-session-panel>
           <div>
             <h3>Session controls</h3>
             <p>Manage provider credentials and your OCL user token. Nothing is stored on our servers.</p>
@@ -87,7 +96,7 @@
       <div class="warning-box">
         We never store provider keys on our servers. Keys are stored only in your browser sessionStorage and cleared
         when you close the tab or browser. We are not responsible for leaks or misuse from third-party attacks. Disable
-        the key when you finish your work. This MVP uses a weak security approach.
+        the key when you finish your work.
       </div>
 
       <form class="form-grid" data-form="config">

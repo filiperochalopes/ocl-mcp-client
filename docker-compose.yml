@@ -1,9 +1,9 @@
 services:
-  ocl-mcp-client:
+  ocl-mcp:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ocl-mcp-client
+    container_name: ocl-mcp
     restart: unless-stopped
     ports:
       - "${HOST_UI_PORT:-8002}:8002"
@@ -12,10 +12,11 @@ services:
     environment:
       - UI_HOST=0.0.0.0
       - UI_PORT=8002
-      - RUN_MCP_SERVER=${RUN_MCP_SERVER:-false}
+      - LOG_LEVEL=INFO
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/help"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+
