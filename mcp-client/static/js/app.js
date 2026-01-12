@@ -507,6 +507,7 @@
       
       input.value = ''
       const historyPayload = buildHistoryPayload()
+      const config = getSessionConfig()
       addMessage('user', value)
       setLoading(true)
 
@@ -514,7 +515,11 @@
         const response = await fetch('/chat/message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: value, history: historyPayload })
+          body: JSON.stringify({ 
+            message: value, 
+            history: historyPayload,
+            config: config
+          })
         })
 
         if (!response.ok) {

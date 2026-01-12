@@ -234,9 +234,10 @@ async def chat_message(request: Request, payload: dict = Body(...)):
     messages.append(HumanMessage(content=user_message))
 
     # Initialize LLM
-    provider = os.getenv("LM_PROVIDER", "anthropic")
-    model_name = os.getenv("LM_MODEL")
-    api_key = os.getenv("LM_TOKEN")
+    config_payload = payload.get("config", {})
+    provider = config_payload.get("provider") or os.getenv("LM_PROVIDER", "anthropic")
+    model_name = config_payload.get("model") or os.getenv("LM_MODEL")
+    api_key = config_payload.get("api_key") or os.getenv("LM_TOKEN")
 
     if provider == "openai":
         llm = ChatOpenAI(model=model_name or "gpt-4o", api_key=api_key)
